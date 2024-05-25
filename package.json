@@ -12,10 +12,18 @@
   "activationEvents": [],
   "main": "./extension.js",
   "contributes": {
-    "commands": [{
-      "command": "mybatis-code-generator.helloWorld",
-      "title": "Hello World"
-    }]
+    "commands": [
+      {
+        "command": "mybatis-code-generator.configureDB",
+        "title": "Configure Database",
+        "category": "MPCG"
+      },
+      {
+        "command": "mybatis-code-generator.setTemplate",
+        "title": "Set Template",
+        "category": "MPCG"
+      }
+    ]
   },
   "scripts": {
     "lint": "eslint .",
@@ -26,12 +34,13 @@
     "mysql2": "^3.9.7"
   },
   "devDependencies": {
-    "@types/vscode": "^1.89.0",
     "@types/mocha": "^10.0.6",
     "@types/node": "18.x",
-    "eslint": "^8.57.0",
-    "typescript": "^5.4.5",
+    "@types/vscode": "^1.89.0",
     "@vscode/test-cli": "^0.0.9",
-    "@vscode/test-electron": "^2.3.9"
+    "@vscode/test-electron": "^2.3.9",
+    "eslint": "^8.57.0",
+    "tailwindcss": "^3.4.3",
+    "typescript": "^5.4.5"
   }
 }
