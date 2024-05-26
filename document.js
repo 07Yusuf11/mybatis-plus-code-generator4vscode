@@ -153,7 +153,10 @@ function getWebviewContent(cssSrc, tableName) {
         for (let key in data) {
             const elem = document.getElementsByName(key)[0];
             if (elem) {
-                elem.value = data[key];
+                if (elem.type === 'text')
+                    elem.value = data[key]
+                else
+                    elem.checked = true
             }
         }
     })

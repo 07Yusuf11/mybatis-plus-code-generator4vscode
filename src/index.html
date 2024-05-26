@@ -122,28 +122,28 @@
 	</div>
 </body>
 <script>
-const vscode = acquireVsCodeApi();
-const form = document.getElementById('config')
-const genbtn = document.getElementById('genbtn')
-const savbtn = document.getElementById('savbtn')
+// const vscode = acquireVsCodeApi();
+// const form = document.getElementById('config')
+// const genbtn = document.getElementById('genbtn')
+// const savbtn = document.getElementById('savbtn')
 
-genbtn.addEventListener('click', () => {
-	const data = new FormData(form)
-	const formdata = Object.fromEntries(data.entries());
-	vscode.postMessage({
-		command: 'genCode',
-		text: JSON.stringify(formdata)
-	})
-})
+// genbtn.addEventListener('click', () => {
+// 	const data = new FormData(form)
+// 	const formdata = Object.fromEntries(data.entries());
+// 	vscode.postMessage({
+// 		command: 'genCode',
+// 		text: JSON.stringify(formdata)
+// 	})
+// })
 
-savbtn.addEventListener('click', () => {
-	const data = new FormData(form);
-	const formdata = Object.fromEntries(data.entries());
-	vscode.postMessage({
-		command: 'save',
-		text: JSON.stringify(formdata)
-	})
-})
+// savbtn.addEventListener('click', () => {
+// 	const data = new FormData(form);
+// 	const formdata = Object.fromEntries(data.entries());
+// 	vscode.postMessage({
+// 		command: 'save',
+// 		text: JSON.stringify(formdata)
+// 	})
+// })
 
 window.addEventListener('message', event => {
 	const message = event.data;
@@ -152,7 +152,10 @@ window.addEventListener('message', event => {
 	for (let key in data) {
 		const elem = document.getElementsByName(key)[0];
 		if (elem) {
-			elem.value = data[key];
+			if (elem.type === 'text')
+				elem.value = data[key]
+			else
+				elem.checked = true
 		}
 	}
 })

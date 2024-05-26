@@ -16,39 +16,43 @@ const path = require('path')
 // pktype: '1'
 // serviceImplpkg: 'service.impl'
 // servicepkg: 'service'
-function getRenderData(config, entityClassName, tableMetaInfo) {
+function getRenderData(options, entityName) {
     var data = {}
     var pkg = {}
     var table = {}
 
-    pkg.Controller = config.package + '.' + config.controllerpkg
-    pkg.Service = config.package + '.' + config.servicepkg
-    pkg.Entity = config.package + '.' + entityClassName
+    pkg.Controller = options.package + '.' + options.controllerpkg
+    pkg.Service = options.package + '.' + options.servicepkg
+    pkg.ServiceImpl = options.package + '.' + options.serviceImplpkg
+    pkg.Mapper = options.package + '.' + options.mapperpkg
+    pkg.Entity = options.package + '.' + options.entitypkg
+    pkg.ModuleName = entityName
 
-    table.serviceName = entityClassName + 'Service'
-    table.entityName = entityClassName
-    table.controllerName = entityClassName + 'Controller'
-    table.comment = tableMetaInfo.comment
-    table.entityPath = tableMetaInfo.tableName
+    table.mapperName = entityName + 'Mapper'
+    table.serviceName = 'I' + entityName + 'Service'
+    table.controllerName = entityName + 'Controller'
+    table.serviceImplName = entityName + 'ServiceImpl'
+    table.entityName = entityName
+    table.comment = entityName
+    table.entity = entityName
 
-    data.swagger2 = config.genSwagger === 'on'
-    data.restControllerStyle = config.genRestController === 'on'
-    data.author = config.author
-    data.entity = entityClassName
-
+    data.swagger = 'genSwagger' in options
+    data.restControllerStyle = 'genRestController' in options
+    data.superMapperClassPackage = 'com.baomidou.mybatisplus.core.mapper.BaseMapper'
+    data.superServiceClassPackage = 'com.baomidou.mybatisplus.extension.service.IService'
+    data.superServiceImplClassPackage = 'com.baomidou.mybatisplus.extension.service.impl.ServiceImpl'
+    data.author = options.author
+    data.superServiceClass = 'IService'
+    data.superServiceImplClass = 'ServiceImpl'
+    data.superMapperClass = 'BaseMapper'
+    data.camelTableName = entityName.charAt(0).toLowerCase() + entityName.slice(1)
     data.package = pkg
     data.table = table
+    data.entity = entityName
 
     return data
 }
 
-function renderController(module, data) {
-    const controllerPath = path.join(module, ...data.package.Controller.split('.'))
-    console.log(data)
-    console.log(controllerPath)
-}
-
 module.exports = {
     getRenderData,
-    renderController
 }
