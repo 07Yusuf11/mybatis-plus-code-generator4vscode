@@ -20,7 +20,7 @@
       },
       {
         "command": "mybatis-code-generator.setTemplate",
-        "title": "Set Template",
+        "title": "SetUp Template",
         "category": "MPCG"
       }
     ]
@@ -30,9 +30,6 @@
     "pretest": "npm run lint",
     "test": "vscode-test"
   },
-  "dependencies": {
-    "mysql2": "^3.9.7"
-  },
   "devDependencies": {
     "@types/mocha": "^10.0.6",
     "@types/node": "18.x",
@@ -40,6 +37,8 @@
     "@vscode/test-cli": "^0.0.9",
     "@vscode/test-electron": "^2.3.9",
     "eslint": "^8.57.0",
+    "freemarker": "^2.0.1",
+    "mysql2": "^3.9.7",
     "tailwindcss": "^3.4.3",
     "typescript": "^5.4.5"
   }

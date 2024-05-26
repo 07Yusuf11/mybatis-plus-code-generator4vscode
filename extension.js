@@ -1,12 +1,9 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
 const mysql = require('mysql2/promise')
 const path = require('path')
 const fs = require('fs')
 const doc = require('./document')
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+const render = require('./renderer')
 
 /**
  * @param {vscode.ExtensionContext} context
@@ -16,26 +13,31 @@ function activate(context) {
 		const workspaceFolders = vscode.workspace.workspaceFolders
 
 		if (workspaceFolders) {
-			const workspaceFolder = workspaceFolders[0].uri.fsPath;
-			const vscodeFolderPath = path.join(workspaceFolder, '.vscode');
-			const jsonFilePath = path.join(vscodeFolderPath, 'db.json');
+			const workspaceFolder = workspaceFolders[0].uri.fsPath
+			const vscodeFolderPath = path.join(workspaceFolder, '.vscode')
+			const jsonFilePath = path.join(vscodeFolderPath, 'generator.json')
 
 			if (!fs.existsSync(vscodeFolderPath)) {
-				fs.mkdirSync(vscodeFolderPath);
+				fs.mkdirSync(vscodeFolderPath)
 			}
 
+			var json = {}
+
 			getDbInfo()
-			.then(
-				info => {
-					fs.writeFileSync(jsonFilePath, JSON.stringify(info, null, 4))
-				}
-			).catch(err => {
-				vscode.window.showWarningMessage(err)
-			})
+				.then(
+					info => {
+						json.db = info
+						fs.writeFileSync(jsonFilePath, JSON.stringify(json, null, 4))
+					}
+				).catch(err => {
+					vscode.window.showWarningMessage(err)
+				})
 		} else {
-			vscode.window.showInformationMessage(messagePrefix + '先打开一个 Java 项目')
+			vscode.window.showInformationMessage(messagePrefix + 'Open a Java Project First')
 		}
 	})
+
+	let panel = undefined
 
 	let setTemplate = vscode.commands.registerCommand('mybatis-code-generator.setTemplate', () => {
 		const workspaceFolders = vscode.workspace.workspaceFolders
@@ -48,41 +50,61 @@ function activate(context) {
 				vscode.commands.executeCommand('mybatis-code-generator.configureDB')
 			}
 
-			var info = fs.readFileSync(jsonFilePath, 'utf-8')
-			info = JSON.parse(info)
-			getTable(info)
-			.then(
-				res => {
-					const panel = vscode.window.createWebviewPanel(
-						'setTemplate',
-						'Setup Template',
-						vscode.ViewColumn.One,
-						{enableScripts: true}
-					)
+			var json = fs.readFileSync(jsonFilePath, 'utf-8')
+			var db = JSON.parse(json).db
+			getTable(db)
+				.then(
+					res => {
+						panel = vscode.window.createWebviewPanel(
+							'setTemplate',
+							'Setup Template',
+							vscode.ViewColumn.One,
+							{ enableScripts: true }
+						)
 
-					const cssPath = vscode.Uri.joinPath(context.extensionUri, 'src', 'output.css')
-					const cssSrc = panel.webview.asWebviewUri(cssPath)
-					panel.webview.html = doc.getWebviewContent(cssSrc)
+						const cssPath = vscode.Uri.joinPath(context.extensionUri, 'src', 'output.css')
+						const cssSrc = panel.webview.asWebviewUri(cssPath)
+						panel.webview.html = doc.getWebviewContent(cssSrc, res.table)
 
-					panel.webview.onDidReceiveMessage(message => {
-						switch (message.command) {
-							case 'genCode':
-								const config = JSON.parse(message.text)
-								console.log(config)
-						}
-					})
-					// showPanel(res.database, res.table, res.conn)
-					// console.log(res.table)
-				}
-			).then(
-				config => genCode(config)
-			).catch(
-				err => {
-					vscode.window.showWarningMessage(err)
-				}
-			)
+						panel.webview.postMessage({
+							data: {
+								module: 'tj_learning',
+								package: 'com.tianji.learning'
+							}
+						}).then(res => console.log(res))
+
+						return new Promise(
+							resolve => {
+								panel.webview.onDidReceiveMessage(msg => {
+									switch (msg.command) {
+										case 'genCode':
+											const options = JSON.parse(msg.text)
+											setTimeout(() => {
+												panel.dispose()
+											}, 500)
+											resolve({ res, options })
+											break;
+										case 'save':
+											saveOption()
+											resolve()
+											break;
+									}
+								})
+							}
+						)
+					}
+				).then(
+					res => {
+						if (res) genCode(res)
+					}
+				).catch(
+					err => {
+						if (panel) panel.dispose()
+						vscode.window.showWarningMessage(err)
+					}
+				)
 		} else {
-			vscode.window.showInformationMessage(messagePrefix + '先打开一个 Java 项目')
+			vscode.window.showInformationMessage(messagePrefix + 'Open a Java Project First')
 		}
 	})
 
@@ -92,74 +114,83 @@ function activate(context) {
 
 const messagePrefix = 'MPCG: '
 
-async function genCode(config) {
-
+function saveOption(jsonFilePath, options) {
+	const jsonstr = fs.readFileSync(jsonFilePath, {encoding: 'utf-8'})
+	var json = JSON.parse(jsonstr)
+	json.options = options
+	fs.writeFileSync(jsonFilePath, JSON.stringify(json, null, 4))
 }
 
-async function showPanel(database, table, conn) {
-	try {
-		const panel = vscode.window.createWebviewPanel(
-			'setTemplate',
-			'Setup Template',
-			vscode.ViewColumn.One,
-			{enableScripts: true}
-		)
+function table2Camel(tableName) {
+	return tableName
+		.split('_')
+		.map(word => word.charAt(0).toUpperCase() + word.slice(1))
+		.join('')
+}
 
-		const cssPath = vscode.Uri.joinPath(context.extensionUri, 'src', 'output.css')
-		const cssSrc = panel.webview.asWebviewUri(cssPath)
-		panel.webview.html = doc.getWebviewContent(cssSrc)
-	} catch (err) {
-		vscode.window.showErrorMessage(messagePrefix + err)
-	}
+function field2Camel(field) {
+	return field.replace(/_([a-z])/g, (match, p) => p.toUpperCase())
+}
+
+async function genCode(arg) {
+	const table = arg.res.table
+	const conn = arg.res.conn
+	const options = arg.options
+
+	const [field] = await conn.query(`DESCRIBE ${table}`)
+	// console.log(field)
+	// console.log(config)
+	const data = render.getRenderData(options, 'LearningLesson', { comment: 'xx 表', tableName: 'learning_lesson' })
+	render.renderController('xxx', data)
 }
 
 async function getTable(info) {
 	try {
-		const database = info.database
+		info.connectTimeout = 1
 		const conn = await mysql.createConnection(info)
-		const [result, field] = await conn.query('SHOW TABLES');
+		const [result] = await conn.query('SHOW TABLES')
 		const tables = result.map(res => Object.values(res)[0])
 		const table = await vscode.window.showQuickPick(tables, {
-			placeHolder: '请选择要生成代码的实体'
+			placeHolder: 'Select table to generate code'
 		})
 
 		return new Promise(
 			(resolve, reject) => {
-				if (table) resolve({database, table, conn})
-				else reject(messagePrefix + "未选择表")
+				if (table) resolve({ table, conn })
+				else reject(messagePrefix + "Nothing selected")
 			}
 		)
 	} catch (err) {
-		vscode.window.showErrorMessage(messagePrefix + '查询数据库失败：' + String(err))
+		vscode.window.showErrorMessage(messagePrefix + 'error when querying database' + String(err))
 	}
 }
 
 async function getDbInfo() {
 	const host = await vscode.window.showInputBox(
-		{prompt: '请输入数据库地址', value: 'localhost'}
+		{ prompt: 'input host', value: 'localhost' }
 	)
 	const user = await vscode.window.showInputBox(
-		{prompt: '请输入用户名', value: 'root'}
+		{ prompt: 'input user', value: 'root' }
 	)
 	const password = await vscode.window.showInputBox(
-		{prompt: '请输入密码', password: true}
+		{ prompt: 'input password', password: true }
 	)
 	const database = await vscode.window.showInputBox(
-		{prompt: '请输入数据库名称'}
+		{ prompt: 'input database' }
 	)
 
 	return new Promise(
 		(resolve, reject) => {
 			if (!host || !user || !password || !database) {
-				reject(messagePrefix + "无输入")
+				reject(messagePrefix + "No input")
 			}
-			resolve({host, user, password, database})
+			resolve({ host, user, password, database })
 		}
 	)
 }
 
 // This method is called when your extension is deactivated
-function deactivate() {}
+function deactivate() { }
 
 module.exports = {
 	activate,
