@@ -3,6 +3,11 @@
   "displayName": "Mybatis-Code-Generator",
   "description": "Generator code 4 Mybatis-Plus",
   "version": "0.0.1",
+  "publisher": "huangtao",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
   "engines": {
     "vscode": "^1.89.0"
   },
@@ -16,12 +21,12 @@
       {
         "command": "mybatis-code-generator.configureDB",
         "title": "Configure Database",
-        "category": "MPCG"
+        "category": "MP Code Generator"
       },
       {
         "command": "mybatis-code-generator.setTemplate",
         "title": "SetUp Template",
-        "category": "MPCG"
+        "category": "MPCode Generator"
       }
     ]
   },
@@ -41,5 +46,8 @@
     "mysql2": "^3.9.7",
     "tailwindcss": "^3.4.3",
     "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "punycode": "^2.3.1"
   }
 }

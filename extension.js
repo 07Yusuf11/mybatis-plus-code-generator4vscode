@@ -100,7 +100,7 @@ function activate(context) {
 		}).then(
 		res => {
 			const templatePath = vscode.Uri.joinPath(context.extensionUri, 'templates').path
-			if (res) genCode(res, templatePath)
+			if (res) genCode(res, templatePath, workspaceFolder)
 		}).catch(
 			err => {
 				if (panel) panel.dispose()
@@ -129,43 +129,91 @@ function table2Camel(tableName) {
 		.join('')
 }
 
-function field2Camel(field) {
-	return field.replace(/_([a-z])/g, (match, p) => p.toUpperCase())
-}
 
-async function genCode(arg, templatePath) {
+
+async function genCode(arg, templatePath, workspaceFolder) {
 	const freemarker = new Freemarker({root: templatePath})
+	const database = arg.res.database
 	const table = arg.res.table
 	const conn = arg.res.conn
 	const options = arg.options
 
-	const [field] = await conn.query(`DESCRIBE ${table}`)
-	console.log(field)
-	console.log(options)
+	const [field] = await conn.query(
+		`SELECT
+		TABLES.TABLE_NAME AS 'tableName',
+		TABLES.TABLE_COMMENT AS 'tableComment',
+		COLUMNS.COLUMN_NAME AS 'fieldName',
+		COLUMNS.COLUMN_TYPE AS 'fieldType',
+		COLUMNS.COLUMN_KEY AS 'key',
+		COLUMNS.COLUMN_COMMENT AS 'fieldComment'
+	FROM
+		INFORMATION_SCHEMA.TABLES
+		INNER JOIN INFORMATION_SCHEMA.COLUMNS ON TABLES.TABLE_SCHEMA = COLUMNS.TABLE_SCHEMA
+		AND TABLES.TABLE_NAME = COLUMNS.TABLE_NAME
+	WHERE
+		TABLES.TABLE_SCHEMA = '${database}'  -- 替换为你的数据库名
+		AND TABLES.TABLE_NAME = '${table}'; -- 替换为你的表名`
+	)
 	const entityName = table2Camel(table)
-	const data = render.getRenderData(options, entityName)
+	var data = render.getRenderData(options, entityName)
+	data = render.getRenderEntityData(data, field)
+	data.table.comment = field[0].tableComment
+	data.table.name = field[0].tableName
+	const pkg = options.package.split('.')
+	var moduleRoot = options.module === '' ? workspaceFolder : path.join(workspaceFolder, options.module, 'src', 'main', 'java',  ...pkg)
 	if ('genController' in options) {
-		freemarker.renderFile(path.join('controller.java.ftl'), data, (err, res) => {
-			console.log(err)
-			console.log(res)
+		freemarker.renderFile(path.join('controller.java'), data, (err, res) => {
+			if (err) console.log(err)
+			const controllerPath = path.join(moduleRoot, ...(options.controllerpkg.split('.')))
+			console.log(controllerPath)
+			if (!fs.existsSync(controllerPath))
+				fs.mkdirSync(controllerPath, {recursive: true})
+			fs.writeFileSync(path.join(controllerPath, data.table.controllerName + '.java'), res)
+			console.log('controller written')
 		})
 	}
 	if ('genService' in options) {
 		freemarker.renderFile(path.join('service.java.ftl'), data, (err, res) => {
-			console.log(err)
-			console.log(res)
+			const servicePath = path.join(moduleRoot, ...(options.servicepkg.split('.')))
+			console.log(servicePath)
+			if (err) console.log(err)
+			if (!fs.existsSync(servicePath))
+				fs.mkdirSync(servicePath, {recursive: true})
+			fs.writeFileSync(path.join(servicePath, data.table.serviceName + '.java'), res)
+			console.log('service written')
 		})
 	}
 	if ('genServiceImpl' in options) {
 		freemarker.renderFile(path.join('serviceImpl.java.ftl'), data, (err, res) => {
-			console.log(err)
-			console.log(res)
+			const serviceImplPath = path.join(moduleRoot, ...(options.serviceImplpkg.split('.')))
+			console.log(serviceImplPath)
+			if (err) console.log(err)
+			if (!fs.existsSync(serviceImplPath))
+				fs.mkdirSync(serviceImplPath, {recursive: true})
+			fs.writeFileSync(path.join(serviceImplPath, data.table.serviceImplName + '.java'), res)
+			console.log('serviceImpl written')
+		})
+	}
+	if ('genEntity' in options) {
+		freemarker.renderFile(path.join('entity.java.ftl'), data, (err, res) => {
+			const entityPath = path.join(moduleRoot, ...(options.entitypkg.split('.')))
+			console.log(entityPath)
+			if (err) console.log(err) 
+			if (!fs.existsSync(entityPath))
+				fs.mkdirSync(entityPath, {recursive: true})
+			fs.writeFileSync(path.join(entityPath, data.table.entityName + '.java'), res)
+			console.log('entity written')
 		})
 	}
 	if ('genMapper' in options) {
 		freemarker.renderFile(path.join('mapper.java.ftl'), data, (err, res) => {
-			console.log(err)
-			console.log(res)
+			const mapperPath = path.join(moduleRoot, ...(options.mapperpkg.split('.')))
+			console.log(mapperPath)
+			if (err) console.log(err)
+			if (!fs.existsSync(mapperPath))
+				fs.mkdirSync(mapperPath, {recursive: true})
+			fs.writeFileSync(path.join(mapperPath, data.table.mapperName + '.java'), res)
+			console.log('mapper written')
 		})
 	}
 }
@@ -181,7 +229,8 @@ async function getTable(info) {
 
 		return new Promise(
 			(resolve, reject) => {
-				if (table) resolve({ table, conn })
+				const database = info.database
+				if (table) resolve({ table, conn, database })
 				else reject(messagePrefix + "Nothing selected")
 			}
 		)
