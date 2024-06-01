@@ -6,8 +6,9 @@
   "publisher": "huangtao",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/07Yusuf11/mybatis-plus-code-generator4vscode.git"
   },
+  "license":"MIT",
   "engines": {
     "vscode": "^1.89.0"
   },
