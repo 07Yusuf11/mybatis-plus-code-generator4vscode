@@ -8,3 +8,9 @@ vsc-extension-quickstart.md
 **/*.map
 **/.eslintrc.json
 **/.vscode-test.*
+tailwind.config.js
+src/index.html
+src/input.css
+extension.js
+renderer.js
+document.js

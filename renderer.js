@@ -84,6 +84,7 @@ function getRenderEntityData(data, fields) {
         fds.push(fld)
     }
 
+    importPackages.push('java.io.Serializable')
     importPackages.push('com.baomidou.mybatisplus.annotation.TableName')
     importPackages.push('com.baomidou.mybatisplus.annotation.TableId')
     importPackages.push('com.baomidou.mybatisplus.annotation.IdType')
