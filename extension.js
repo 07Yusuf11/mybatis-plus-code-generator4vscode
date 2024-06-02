@@ -151,8 +151,8 @@ async function genCode(arg, templatePath, workspaceFolder) {
 		INNER JOIN INFORMATION_SCHEMA.COLUMNS ON TABLES.TABLE_SCHEMA = COLUMNS.TABLE_SCHEMA
 		AND TABLES.TABLE_NAME = COLUMNS.TABLE_NAME
 	WHERE
-		TABLES.TABLE_SCHEMA = '${database}'  -- 替换为你的数据库名
-		AND TABLES.TABLE_NAME = '${table}'; -- 替换为你的表名`
+		TABLES.TABLE_SCHEMA = '${database}'
+		AND TABLES.TABLE_NAME = '${table}';`
 	)
 	const entityName = table2Camel(table)
 	var data = render.getRenderData(options, entityName)
@@ -162,60 +162,61 @@ async function genCode(arg, templatePath, workspaceFolder) {
 	const pkg = options.package.split('.')
 	var moduleRoot = options.module === '' ? workspaceFolder : path.join(workspaceFolder, options.module, 'src', 'main', 'java',  ...pkg)
 	if ('genController' in options) {
-		freemarker.renderFile(path.join('controller.java'), data, (err, res) => {
-			if (err) console.log(err)
+		freemarker.renderFile('controller.java', data, (err, res) => {
+			if (err) {
+				throw new Error(err)
+			} 
 			const controllerPath = path.join(moduleRoot, ...(options.controllerpkg.split('.')))
-			console.log(controllerPath)
 			if (!fs.existsSync(controllerPath))
 				fs.mkdirSync(controllerPath, {recursive: true})
 			fs.writeFileSync(path.join(controllerPath, data.table.controllerName + '.java'), res)
-			console.log('controller written')
 		})
 	}
 	if ('genService' in options) {
-		freemarker.renderFile(path.join('service.java.ftl'), data, (err, res) => {
+		freemarker.renderFile('service.java', data, (err, res) => {
 			const servicePath = path.join(moduleRoot, ...(options.servicepkg.split('.')))
-			console.log(servicePath)
-			if (err) console.log(err)
+			if (err) {
+				throw new Error(err)
+			} 
 			if (!fs.existsSync(servicePath))
 				fs.mkdirSync(servicePath, {recursive: true})
 			fs.writeFileSync(path.join(servicePath, data.table.serviceName + '.java'), res)
-			console.log('service written')
 		})
 	}
 	if ('genServiceImpl' in options) {
-		freemarker.renderFile(path.join('serviceImpl.java.ftl'), data, (err, res) => {
+		freemarker.renderFile('serviceImpl.java', data, (err, res) => {
 			const serviceImplPath = path.join(moduleRoot, ...(options.serviceImplpkg.split('.')))
-			console.log(serviceImplPath)
-			if (err) console.log(err)
+			if (err) {
+				throw new Error(err)
+			} 
 			if (!fs.existsSync(serviceImplPath))
 				fs.mkdirSync(serviceImplPath, {recursive: true})
 			fs.writeFileSync(path.join(serviceImplPath, data.table.serviceImplName + '.java'), res)
-			console.log('serviceImpl written')
 		})
 	}
 	if ('genEntity' in options) {
-		freemarker.renderFile(path.join('entity.java.ftl'), data, (err, res) => {
+		freemarker.renderFile('entity.java', data, (err, res) => {
 			const entityPath = path.join(moduleRoot, ...(options.entitypkg.split('.')))
-			console.log(entityPath)
-			if (err) console.log(err) 
+			if (err) {
+				throw new Error(err)
+			} 
 			if (!fs.existsSync(entityPath))
 				fs.mkdirSync(entityPath, {recursive: true})
 			fs.writeFileSync(path.join(entityPath, data.table.entityName + '.java'), res)
-			console.log('entity written')
 		})
 	}
 	if ('genMapper' in options) {
-		freemarker.renderFile(path.join('mapper.java.ftl'), data, (err, res) => {
+		freemarker.renderFile('mapper.java', data, (err, res) => {
 			const mapperPath = path.join(moduleRoot, ...(options.mapperpkg.split('.')))
-			console.log(mapperPath)
-			if (err) console.log(err)
+			if (err) {
+				throw new Error(err)
+			} 
 			if (!fs.existsSync(mapperPath))
 				fs.mkdirSync(mapperPath, {recursive: true})
 			fs.writeFileSync(path.join(mapperPath, data.table.mapperName + '.java'), res)
-			console.log('mapper written')
 		})
 	}
+	vscode.window.showInformationMessage(messagePrefix + 'Generate Code Successful')
 }
 
 async function getTable(info) {

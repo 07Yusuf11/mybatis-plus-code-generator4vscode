@@ -7,7 +7,9 @@ esbuild.build({
   bundle: true,
   outdir: 'dist', // 输出目录
   platform: 'node', // 平台是 node
-  external: ['vscode'], // 排除 vscode 模块
+  external: ['vscode', 'freemarker'], // 排除 vscode 模块
   sourcemap: true, // 生成 sourcemap
   minify: false, // 如果需要压缩，设置为 true
+  format: 'cjs',
+  target: 'es2022'
 }).catch(() => process.exit(1));

@@ -9,8 +9,10 @@ vsc-extension-quickstart.md
 **/.eslintrc.json
 **/.vscode-test.*
 tailwind.config.js
+esbuild.config.js
 src/index.html
 src/input.css
 extension.js
 renderer.js
 document.js
+!node_modules/freemarker
