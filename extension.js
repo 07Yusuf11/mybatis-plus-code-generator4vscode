@@ -24,6 +24,11 @@ function activate(context) {
 
 			var json = {}
 
+			if (fs.existsSync(jsonFilePath)) {
+				json = JSON.parse(fs.readFileSync(jsonFilePath, 'utf-8'))
+			}
+
+
 			getDbInfo()
 				.then(
 					info => {
